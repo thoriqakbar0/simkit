@@ -1,0 +1,4 @@
+simpy
+fastapi[standard]
+ship-llm
+python-dotenv
