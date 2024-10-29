@@ -1,0 +1,1 @@
+<div class="flex flex-col h-full debug justify-center items-center">simulation will appear here</div>

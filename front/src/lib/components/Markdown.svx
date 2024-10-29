@@ -1,0 +1,5 @@
+<script>
+    let { content: string = ""} = $props();
+</script>
+
+{content}

@@ -1,11 +1,14 @@
 <script lang="ts">
     import Button from "./ui/button/button.svelte";
     import Input from "./ui/input/input.svelte";
+    import { cn } from "$lib/utils"
+
+    let { class: className = ""} = $props();
 
     type Role = "user" | "assistant" | "system";
 
+    
     let isStreaming = $state(false);
-
     interface Message {
         role: Role;
         content: string;
@@ -13,14 +16,13 @@
 
     let messages: Message[] = $state([]);
     let inputMessage = $state("");
-    let streamedContent = $state("");
 
     async function handleSubmit() {
         if (inputMessage.trim()) {
             isStreaming = true;
             messages = [...messages, { role: "user", content: inputMessage }];
             inputMessage = "";
-            messages = [...messages, { role: "assistant", content: streamedContent }];
+            messages = [...messages, { role: "assistant", content: "" }];
 
             const response = await fetch("http://localhost:8000/ai", {
                 method: "POST",
@@ -32,13 +34,13 @@
 
             const reader = response.body?.getReader();
             const decoder = new TextDecoder();
-
+            let accumulated = ""
             while (true) {
                 const { done, value } = await reader?.read() ?? { done: true, value: undefined };
                 if (done) break;
                 
-                streamedContent += decoder.decode(value);
-                messages[messages.length - 1].content = streamedContent;
+                accumulated += decoder.decode(value);
+                messages[messages.length - 1].content = accumulated;
             }
             isStreaming = false;
         }
@@ -51,7 +53,7 @@
     }
 </script>
 
-<div class="flex flex-col h-full debug relative">
+<div class={cn("flex flex-col h-full max-h-screen relative overflow-y-auto pb-20", className)}>
     <div class="flex-1 overflow-y-auto p-4">
         {#each messages as message}
             {@render Message(message.role, message.content)}
