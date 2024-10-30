@@ -8,7 +8,6 @@ import os
 from pydantic import BaseModel, ValidationError
 from typing import Literal, List, Dict, Optional, Any
 import simpy
-import random
 
 load_dotenv()
 
@@ -31,16 +30,23 @@ class Message(BaseModel):
 class MessageHistory(BaseModel):
     messages: List[Message]
 
-@ai.text(stream=True)
-def test_ai(chat: MessageHistory):
+class ChatAIResponse(BaseModel):
+    bot_message: str
+    ready_to_simulate: bool = False
+
+@ai.structured(response_format=ChatAIResponse, stream=True)
+def test_ai(chat: MessageHistory) -> ChatAIResponse:
     """
     You are SimKitty, a specialized assistant for creating SimPy simulations.
-    Output format must be JSON-compatible and match SimulationConfig schema.
     Focus on:
     - Resource allocation
     - Process flows
     - Entity interactions
     - Time-based events
+
+    do not output code, but rather instruction. the instruction will be passed to another ai
+
+    if bot message is long or prompt is quite ready to warrant a simulation, set ready_to_simulate to True
     """
     return chat
 
@@ -50,7 +56,8 @@ def hello(chat: MessageHistory):
     response = test_ai(sum['messages'])
     def generate_response(response):
         for chunk in response:
-            yield chunk
+            print(f"data: {chunk.model_dump_json()} \n\n")
+            yield f"data: {chunk.model_dump_json()} \n\n"
 
     return StreamingResponse(
         generate_response(response),
@@ -145,6 +152,7 @@ def run_simulation(config: SimConfig):
             resources[res.name] = simpy.PriorityResource(env, capacity=res.capacity)
         else:
             resources[res.name] = simpy.Resource(env, capacity=res.capacity)
+        metrics[f"{res.name}_utilization"] = []
 
     # Map processes by name for easy access
     process_dict = {process.name: process for process in config.processes}
@@ -200,11 +208,11 @@ def run_simulation(config: SimConfig):
         # Release resources if specified
         if process_config.release_resources:
             # After requesting resources
-            for i, resource_name in enumerate(process_config.required_resources):
-                resource = resources[resource_name]
-                # Track resource utilization
-                utilization = len(resource.users) / resource.capacity * 100
-                metrics[f"{resource_name}_utilization"].append(utilization)
+            for resource_name in process_config.required_resources:
+                    resource = resources[resource_name]
+                    # Track resource utilization
+                    utilization = len(resource.users) / resource.capacity * 100
+                    metrics[f"{resource_name}_utilization"].append(utilization)
 
 
         # Proceed to next processes
@@ -281,7 +289,7 @@ def run_sim(config: SimConfig):
     return {"config": config.dict(), "results": results}
 
 @app.post("/generate-sim")
-def create_simulation(prompt: str):
+def create_sim(prompt: str):
     try:
         config = generate_simulation(prompt)
     except ValidationError as e:
@@ -290,10 +298,10 @@ def create_simulation(prompt: str):
     return {"config": config, "results": results}
 
 @app.post("/run-sim")
-def run_sim(config: SimConfig):
+def run_simsim(config: SimConfig):
     try:
         config = SimConfig(**config)
     except ValidationError as e:
         raise HTTPException(status_code=400, detail=str(e))
     results = run_simulation(config)
-    return results
+    return {"config": config.dict(), "results": results}

@@ -2,6 +2,7 @@ import { fontFamily } from "tailwindcss/defaultTheme";
 import type { Config } from "tailwindcss";
 import tailwindcssAnimate from "tailwindcss-animate";
 
+
 const config: Config = {
 	darkMode: ["class"],
 	content: ["./src/**/*.{html,js,svelte,ts}"],
@@ -90,7 +91,8 @@ const config: Config = {
       		},
 		},
 	},
-	plugins: [tailwindcssAnimate],
+	// @ts-ignore
+	plugins: [tailwindcssAnimate, require("@tailwindcss/typography")],
 };
 
 export default config;

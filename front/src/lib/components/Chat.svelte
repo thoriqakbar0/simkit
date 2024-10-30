@@ -1,62 +1,69 @@
 <script lang="ts">
     import Button from "./ui/button/button.svelte";
     import Input from "./ui/input/input.svelte";
-    import { cn } from "$lib/utils"
+    import { cn } from "$lib/utils";
+    import { marked } from 'marked';
 
     let { class: className = ""} = $props();
+    import { chatStore} from "./chat-store.svelte";
 
     type Role = "user" | "assistant" | "system";
 
-    
-    let isStreaming = $state(false);
     interface Message {
         role: Role;
         content: string;
+        ready_to_simulate?: boolean;
     }
 
-    let messages: Message[] = $state([]);
     let inputMessage = $state("");
 
-    async function handleSubmit() {
+    async function submitMessages() {
         if (inputMessage.trim()) {
-            isStreaming = true;
-            messages = [...messages, { role: "user", content: inputMessage }];
+            chatStore.isStreaming = true;
+            chatStore.messages = [...chatStore.messages, { role: "user", content: inputMessage }];
             inputMessage = "";
-            messages = [...messages, { role: "assistant", content: "" }];
-
+            chatStore.messages = [...chatStore.messages, { role: "assistant", content: "" }];
+            const messages = chatStore.messages;
             const response = await fetch("http://localhost:8000/ai", {
                 method: "POST",
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ messages })
+                body: JSON.stringify({ messages})
             });
 
             const reader = response.body?.getReader();
             const decoder = new TextDecoder();
-            let accumulated = ""
             while (true) {
                 const { done, value } = await reader?.read() ?? { done: true, value: undefined };
-                if (done) break;
-                
-                accumulated += decoder.decode(value);
-                messages[messages.length - 1].content = accumulated;
+                if (done) {
+                    chatStore.isStreaming = false;
+                    break;
+                }
+                const chunk = decoder.decode(value);
+                try {
+                    const { bot_message, ready_to_simulate } = JSON.parse(chunk.replace(/^data: /, '').trim());
+                    Object.assign(chatStore.messages[chatStore.messages.length - 1], { content: bot_message, ready_to_simulate });
+                } catch (error) {
+                    console.error("Failed to parse JSON:", error);
+                }
             }
-            isStreaming = false;
+            chatStore.isStreaming = false;
         }
     }
 
     function handleKeydown(event: KeyboardEvent) {
-        if (event.key === "Enter" && !isStreaming) {
-            handleSubmit();
+        if (event.key === "Enter" && !chatStore.isStreaming) {
+            submitMessages();
         }
     }
 </script>
 
 <div class={cn("flex flex-col h-full max-h-screen relative overflow-y-auto pb-20", className)}>
     <div class="flex-1 overflow-y-auto p-4">
-        {#each messages as message}
-            {@render Message(message.role, message.content)}
+        {@render Message("assistant", "Hello! How can I help you with your process flow brainstorm today?")}
+        {#each chatStore.messages as message}
+            {@render Message(message.role, message.content, message.ready_to_simulate)}
         {/each}
     </div>
     {@render InputField()}
@@ -68,16 +75,19 @@
         bind:value={inputMessage} 
         placeholder="Type a message..." 
         onkeydown={handleKeydown}
-        disabled={isStreaming}
+        disabled={chatStore.isStreaming}
     />
-    <Button onclick={handleSubmit} disabled={isStreaming}>Submit</Button>
+    <Button onclick={submitMessages} disabled={chatStore.isStreaming}>Submit</Button>
 </div>
 {/snippet}
 
-{#snippet Message(role: Role, content: string)}
+{#snippet Message(role: Role, content: string, ready_to_simulate?: boolean)}
 <div class="flex w-full {role === 'assistant' ? 'justify-start' : 'justify-end'} mb-4">
-    <div class="max-w-[70%] rounded-lg px-4 py-2 {role === 'assistant' ? 'bg-secondary text-secondary-foreground' : 'bg-primary text-primary-foreground'}">
-        {content}
+    <div class="prose prose-code:max-w-[50%] max-w-[70%] rounded-lg px-4 py-2 text-md {role === 'assistant' ? 'bg-secondary text-secondary-foreground' : 'bg-primary text-primary-foreground'}">
+        {@html marked(content)}
     </div>
+    {#if role === "assistant" && ready_to_simulate}
+        <Button class="ml-2" variant="secondary">Simulate</Button>
+    {/if}
 </div>
 {/snippet}
