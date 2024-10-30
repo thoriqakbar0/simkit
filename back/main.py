@@ -114,7 +114,7 @@ class SimConfig(BaseModel):
     def get_metric_units(self) -> List[str]:
         return list(set(metric.unit for metric in self.target_metrics))
 
-@ai.structured(response_format=SimConfig)
+@ai.structured(response_format=SimConfig, stream=True)
 def generate_simulation(prompt: str) -> SimConfig:
     """You are SimKitty, an expert at creating SimPy simulation configurations.
     Generate practical and realistic simulation scenarios based on user prompts.
@@ -270,14 +270,6 @@ def run_simulation(config: SimConfig):
 
     return results
 
-@app.post("/generate-sim")
-def create_simulation(prompt: str):
-    try:
-        config = generate_simulation(prompt)
-    except ValidationError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    results = run_simulation(config)
-    return {"config": config.dict(), "results": results}
 
 @app.post("/run-sim")
 def run_sim(config: SimConfig):
@@ -288,14 +280,24 @@ def run_sim(config: SimConfig):
     results = run_simulation(config)
     return {"config": config.dict(), "results": results}
 
+class Sim(BaseModel):
+    prompt: str
+
 @app.post("/generate-sim")
-def create_sim(prompt: str):
+def create_sim(prompt: Sim):
     try:
-        config = generate_simulation(prompt)
+        config = generate_simulation(prompt.prompt)
     except ValidationError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    results = run_simulation(config)
-    return {"config": config, "results": results}
+    
+    def generate_response(config):
+        for chunk in config:
+            yield f"data: {chunk.model_dump_json()} \n\n"
+
+    return StreamingResponse(
+        generate_response(config),
+        media_type="text/event-stream"
+    )
 
 @app.post("/run-sim")
 def run_simsim(config: SimConfig):

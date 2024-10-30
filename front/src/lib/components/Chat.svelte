@@ -45,7 +45,7 @@
                     const { bot_message, ready_to_simulate } = JSON.parse(chunk.replace(/^data: /, '').trim());
                     Object.assign(chatStore.messages[chatStore.messages.length - 1], { content: bot_message, ready_to_simulate });
                 } catch (error) {
-                    console.error("Failed to parse JSON:", error);
+                    continue;
                 }
             }
             chatStore.isStreaming = false;
@@ -55,6 +55,37 @@
     function handleKeydown(event: KeyboardEvent) {
         if (event.key === "Enter" && !chatStore.isStreaming) {
             submitMessages();
+        }
+    }
+
+    async function simulate(content: string) {
+        console.log(JSON.stringify({ prompt: content }));
+        try {
+            const response = await fetch("http://localhost:8000/generate-sim", {
+                method: "POST",
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ prompt: content })
+            });
+            const reader = response.body?.getReader();
+            const decoder = new TextDecoder();
+            while (true) {
+                const { done, value } = await reader?.read() ?? { done: true, value: undefined };
+                if (done) {
+                    chatStore.isStreaming = false;
+                    break;
+                }
+                const chunk = decoder.decode(value);
+                try {
+                    const data = JSON.parse(chunk.replace(/^data: /, '').trim());
+                    chatStore.simConfig = data;
+                } catch (error) {
+                    continue;
+                }
+            }
+        } catch (error) {
+            // console.error("Simulation failed:", error);
         }
     }
 </script>
@@ -87,7 +118,7 @@
         {@html marked(content)}
     </div>
     {#if role === "assistant" && ready_to_simulate}
-        <Button class="ml-2" variant="secondary">Simulate</Button>
+        <Button class="ml-2" variant="secondary" onclick={() => simulate(content)}>Simulate</Button>
     {/if}
 </div>
 {/snippet}
