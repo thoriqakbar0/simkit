@@ -1,13 +1,14 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from openai import OpenAI
 from dotenv import load_dotenv
 from ship_llm import AI
 from fastapi.responses import StreamingResponse
 import os
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 from typing import Literal, List, Dict, Optional, Any
 import simpy
+import random
 
 load_dotenv()
 
@@ -127,19 +128,17 @@ def generate_simulation(prompt: str) -> SimConfig:
     """
     return prompt
 
-
 def run_simulation(config: SimConfig):
     env = simpy.Environment()
-
     # Initialize metrics
     metrics = {}
     valid_units = config.get_metric_units()
     for metric in config.target_metrics:
         if metric.unit in valid_units:
-            metrics[metric.name] = 0
-        else:
             metrics[metric.name] = []
-
+        else:
+            # For count-based metrics, initialize with 0
+            metrics[metric.name] = 0
     resources = {}
     for res in config.resources:
         if res.priority:
@@ -179,21 +178,34 @@ def run_simulation(config: SimConfig):
         # Process execution
         yield env.timeout(process_config.duration)
 
-        # Update entity attributes if needed
-        # Example: entity.attributes["processed"] = True
-
         # Track metrics
+        # Inside process_flow function, replace the metrics tracking section with:
+# Process execution
+
+# Track metrics
         for metric in config.target_metrics:
-            if metric.unit in valid_units:
-                metrics[metric.name] += 1
-            else:
+            if metric.unit == "minutes":
+                # Time-based metrics
                 elapsed_time = env.now - start_time
                 metrics[metric.name].append(elapsed_time)
+            elif metric.unit == "count":
+                # Count-based metrics
+                metrics[metric.name] += 1
+            elif metric.unit == "percentage":
+                # Percentage-based metrics (e.g., resource utilization)
+                current_value = (env.now - start_time) / process_config.duration * 100
+                metrics[metric.name].append(current_value)
+
 
         # Release resources if specified
         if process_config.release_resources:
+            # After requesting resources
             for i, resource_name in enumerate(process_config.required_resources):
-                resources[resource_name].release(reqs[i])
+                resource = resources[resource_name]
+                # Track resource utilization
+                utilization = len(resource.users) / resource.capacity * 100
+                metrics[f"{resource_name}_utilization"].append(utilization)
+
 
         # Proceed to next processes
         for next_process in process_config.next_processes:
@@ -208,9 +220,6 @@ def run_simulation(config: SimConfig):
         while True:
             yield env.timeout(entity_interval)
             entity_attributes = config.entity_attributes.copy()
-            # Initialize entity attributes if needed
-            entity_attributes["Age"] = 0  # Example attribute
-            entity_attributes["Has laid eggs"] = False  # Example attribute
             entity = SimEntity(attributes=entity_attributes)
             # Start with processes that have no predecessors
             starting_processes = [p.name for p in config.processes if not any(p.name in proc.next_processes for proc in config.processes)]
@@ -252,13 +261,39 @@ def run_simulation(config: SimConfig):
             results["metrics"][metric.name] = values
 
     return results
+
 @app.post("/generate-sim")
 def create_simulation(prompt: str):
-    config = generate_simulation(prompt)
+    try:
+        config = generate_simulation(prompt)
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    results = run_simulation(config)
+    return {"config": config.dict(), "results": results}
+
+@app.post("/run-sim")
+def run_sim(config: SimConfig):
+    try:
+        config = SimConfig(**config)
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    results = run_simulation(config)
+    return {"config": config.dict(), "results": results}
+
+@app.post("/generate-sim")
+def create_simulation(prompt: str):
+    try:
+        config = generate_simulation(prompt)
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     results = run_simulation(config)
     return {"config": config, "results": results}
 
 @app.post("/run-sim")
 def run_sim(config: SimConfig):
+    try:
+        config = SimConfig(**config)
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     results = run_simulation(config)
     return results
