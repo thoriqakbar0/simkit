@@ -24,7 +24,7 @@
             inputMessage = "";
             chatStore.messages = [...chatStore.messages, { role: "assistant", content: "" }];
             const messages = chatStore.messages;
-            const response = await fetch("http://backend8000/ai", {
+            const response = await fetch("http://backend:8000/ai", {
                 method: "POST",
                 headers: {
                     'Content-Type': 'application/json'
