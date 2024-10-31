@@ -3,7 +3,14 @@ FROM python:3.11-alpine AS backend
 RUN apk add --no-cache gcc musl-dev libffi-dev
 WORKDIR /app/backend
 COPY ./back .
+
+# Create and activate virtual environment
+RUN python -m venv venv
+ENV PATH="/app/backend/venv/bin:$PATH"
+
+# Install Python dependencies
 RUN pip install --no-cache-dir -r req.txt fastapi
+
 
 # Frontend stage
 FROM node:20 AS frontend
