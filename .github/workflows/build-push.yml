@@ -22,6 +22,12 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Copy BACKEND_ENV to back directory
+        run: echo "${{ secrets.BACKEND_ENV }}" > back/.env
+
+      - name: Copy FRONTEND_ENV to front directory
+        run: echo "${{ secrets.FRONTEND_ENV }}" > front/.env
+
       - name: Build and push Docker images
         uses: docker/build-push-action@v4
         with:
@@ -30,18 +36,3 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository }}/simkit:latest
             ghcr.io/${{ github.repository }}/simkit:${{ github.sha }}
-
-  deploy:
-    needs: build-and-push
-    runs-on: ubuntu-latest
-    steps:
-      - name: Deploy to VM
-        uses: appleboy/ssh-action@master
-        with:
-          host: 167.172.92.62
-          username: "root"
-          key: ${{ secrets.VM_SSH }}
-          script: |
-            docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
-            docker-compose pull
-            docker-compose up -d
