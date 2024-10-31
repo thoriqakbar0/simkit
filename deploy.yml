@@ -1,0 +1,14 @@
+service: simkit
+image: ${{ secrets.DOCKERHUB_USERNAME }}/simkit
+servers:
+  - 167.172.92.62
+registry:
+  username: ${{ secrets.DOCKERHUB_USERNAME }}
+  password: ${{ secrets.DOCKERHUB_TOKEN }}
+env:
+  PORT: 3002
+  HOST: 0.0.0.0
+
+healthcheck:
+  port: 3002
+  path: /
