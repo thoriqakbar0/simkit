@@ -81,7 +81,9 @@
                 try {
                     const data = JSON.parse(chunk.replace(/^data: /, '').trim());
                     chatStore.simConfig = data;
+                    console.log(data)
                 } catch (error) {
+            console.error("Simulation failed:", error);
                     continue;
                 }
             }
