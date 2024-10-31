@@ -1,6 +1,8 @@
 <script lang="ts">
     import { chatStore } from "./chat-store.svelte";
-    let simConfig = chatStore.simConfig;
+    let simConfig = $state(null)
+    // @ts-ignore
+    simConfig = chatStore.simConfig;
 </script>
 
 <div class="simulation-container">
