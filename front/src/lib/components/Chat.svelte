@@ -83,7 +83,7 @@
                     chatStore.simConfig = data;
                     console.log(data)
                 } catch (error) {
-            console.error("Simulation failed:", error);
+                    console.error("Simulation failed:", error);
                     continue;
                 }
             }
