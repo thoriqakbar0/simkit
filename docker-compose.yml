@@ -13,7 +13,7 @@ services:
   frontend:
     image: ghcr.io/thoriqakbar0/simkit:latest
     ports:
-      - "5173:3002"
+      - "3000:3002"
     depends_on:
       - backend
 
