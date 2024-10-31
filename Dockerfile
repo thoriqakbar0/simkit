@@ -30,10 +30,10 @@ RUN mkdir -p /run/postgresql && chown -R postgres:postgres /run/postgresql
 RUN npm install -g dotenv
 
 # Start all services
-CMD ["sh", "-c", "su postgres -c 'pg_ctl initdb -D /var/lib/postgresql/data' && \
+CMD sh -c "su postgres -c 'pg_ctl initdb -D /var/lib/postgresql/data' && \
      su postgres -c 'echo \"listen_addresses = '\''*'\''\" >> /var/lib/postgresql/data/postgresql.conf' && \
      su postgres -c 'echo \"host all all 0.0.0.0/0 trust\" >> /var/lib/postgresql/data/pg_hba.conf' && \
      su postgres -c 'pg_ctl start -D /var/lib/postgresql/data' && \
      cd /app/backend && uvicorn main:app --host 0.0.0.0 --port 8000 & \
-     cd /app/frontend && node -r dotenv/config build"]
+     cd /app/frontend && node -r dotenv/config build"
 
