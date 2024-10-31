@@ -23,6 +23,9 @@ EXPOSE 8000 3002 5432
 # Initialize PostgreSQL data directory
 RUN mkdir -p /var/lib/postgresql/data && chown -R postgres:postgres /var/lib/postgresql
 
+# Create the run directory for PostgreSQL
+RUN mkdir -p /run/postgresql && chown -R postgres:postgres /run/postgresql
+
 # Install dotenv for loading environment variables
 RUN npm install -g dotenv
 
