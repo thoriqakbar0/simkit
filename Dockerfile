@@ -1,12 +1,12 @@
 # Backend stage
-FROM python:3.11-alpine as backend
+FROM python:3.11-alpine AS backend
 RUN apk add --no-cache gcc musl-dev libffi-dev
 WORKDIR /app/backend
 COPY ./back .
 RUN pip install --no-cache-dir -r req.txt
 
 # Frontend stage
-FROM node:20 as frontend
+FROM node:20 AS frontend
 WORKDIR /app/frontend
 COPY ./front .
 RUN npm install
