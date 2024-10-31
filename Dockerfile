@@ -3,11 +3,7 @@ FROM python:3.11-alpine as backend
 RUN apk add --no-cache gcc musl-dev libffi-dev
 WORKDIR /app/backend
 COPY ./back .
-RUN apk add --no-cache curl && \
-    curl -L https://ghcr.io/astral-sh/uv:latest -o /usr/local/bin/uv && \
-    chmod +x /usr/local/bin/uv
-
-RUN uv pip install --no-cache-dir -r req.txt
+RUN pip install --no-cache-dir -r req.txt
 
 # Frontend stage
 FROM node:20 as frontend
