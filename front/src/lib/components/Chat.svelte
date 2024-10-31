@@ -60,6 +60,7 @@
 
     async function simulate(content: string) {
         console.log(JSON.stringify({ prompt: content }));
+        chatStore.isStreaming = true;
         try {
             const response = await fetch("https://simkitapi.rethoriq.com/generate-sim", {
                 method: "POST",
@@ -84,8 +85,9 @@
                     continue;
                 }
             }
+            chatStore.isStreaming = false;
         } catch (error) {
-            // console.error("Simulation failed:", error);
+            console.error("Simulation failed:", error);
         }
     }
 </script>
@@ -118,7 +120,7 @@
         {@html marked(content)}
     </div>
     {#if role === "assistant" && ready_to_simulate}
-        <Button class="ml-2" variant="secondary" onclick={() => simulate(content)}>Simulate</Button>
+        <Button class="ml-2" variant="secondary" onclick={() => simulate(content)} disabled={chatStore.isStreaming}>Simulate</Button>
     {/if}
 </div>
 {/snippet}
