@@ -10,12 +10,13 @@ services:
     expose:
       - "8000"
 
- frontend:
+  frontend:
     image: ghcr.io/thoriqakbar0/simkit:latest
     ports:
-      - "3000:3002"
+      - "3005:3000"
     depends_on:
       - backend
+
 
   db:
     image: postgres:17
