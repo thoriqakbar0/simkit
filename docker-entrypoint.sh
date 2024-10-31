@@ -6,9 +6,9 @@ su postgres -c 'echo "listen_addresses = '\''*'\''" >> /var/lib/postgresql/data/
 su postgres -c 'echo "host all all 0.0.0.0/0 trust" >> /var/lib/postgresql/data/pg_hba.conf'
 su postgres -c 'pg_ctl start -D /var/lib/postgresql/data'
 
-# Start backend and frontend
+# Start backend with correct venv path
 cd /app/backend
-fastapi run app/main.py --host 0.0.0.0 --port 8000 &
+/app/backend/venv/bin/python -m uvicorn main:app --host 0.0.0.0 --port 8000 &
 
 cd /app/frontend
 node -r dotenv/config build

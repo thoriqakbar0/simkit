@@ -4,13 +4,10 @@ RUN apk add --no-cache gcc musl-dev libffi-dev
 WORKDIR /app/backend
 COPY ./back .
 
-# Create and activate virtual environment
-RUN python -m venv venv
-ENV PATH="/app/backend/venv/bin:$PATH"
-
-# Install Python dependencies
-RUN pip install --no-cache-dir -r req.txt fastapi
-
+# Create and activate virtual environment with all dependencies
+RUN python -m venv venv && \
+    . venv/bin/activate && \
+    pip install --no-cache-dir -r req.txt fastapi uvicorn
 
 # Frontend stage
 FROM node:20 AS frontend
@@ -21,22 +18,26 @@ RUN npm run build
 
 # Final stage
 FROM python:3.11-alpine
-RUN apk add --no-cache nodejs npm postgresql postgresql-contrib libffi-dev
+RUN apk add --no-cache gcc musl-dev libffi-dev nodejs npm postgresql postgresql-contrib
 WORKDIR /app
+
+# Copy backend with venv and install dependencies in final stage
 COPY --from=backend /app/backend /app/backend
+RUN . /app/backend/venv/bin/activate && \
+    pip install --no-cache-dir -r /app/backend/req.txt fastapi uvicorn
+
+# Copy frontend build
 COPY --from=frontend /app/frontend /app/frontend
 
-# Set up environment and permissions for PostgreSQL
-RUN mkdir -p /var/lib/postgresql/data && chown -R postgres:postgres /var/lib/postgresql/data
-RUN mkdir -p /run/postgresql && chown -R postgres:postgres /run/postgresql
+# Set up PostgreSQL directories
+RUN mkdir -p /var/lib/postgresql/data && chown -R postgres:postgres /var/lib/postgresql/data && \
+    mkdir -p /run/postgresql && chown -R postgres:postgres /run/postgresql
 
 # Install dotenv globally for frontend
 RUN npm install -g dotenv
 
-# Expose necessary ports
 EXPOSE 8000 3000 5432
 
-# Set up entrypoint for running services
 COPY ./docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
