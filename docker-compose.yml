@@ -1,17 +1,29 @@
-version: '3'
+version: '3.8'
+
 services:
   backend:
     build:
       context: .
-      dockerfile: Dockerfile.backend
-    expose:
-      - "8000" 
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=postgres://postgres:password@db:5432/simkit
+    depends_on:
+      - db
+    ports:
+      - "8000:8000"
 
   frontend:
     build:
       context: .
-      dockerfile: Dockerfile.frontend
+      dockerfile: Dockerfile
     ports:
-      - "3000:3005"
-    depends_on:
-      - backend
+      - "3002:3002"
+
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: simkit
+    ports:
+      - "5432:5432"
