@@ -2,9 +2,7 @@ version: '3.8'
 
 services:
   backend:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/thoriqakbar0/simkit:latest
     environment:
       - DATABASE_URL=postgres://postgres:password@db:5432/simkit
     depends_on:
@@ -13,9 +11,7 @@ services:
       - "8000"
 
   frontend:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/thoriqakbar0/simkit:latest
     ports:
       - "5173:3002"
     depends_on:
