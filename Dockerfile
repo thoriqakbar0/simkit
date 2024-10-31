@@ -14,10 +14,11 @@ RUN npm run build
 
 # Final stage
 FROM python:3.11-alpine
+RUN apk add --no-cache nodejs npm postgresql-client
 WORKDIR /app
 COPY --from=backend /app/backend /app/backend
 COPY --from=frontend /app/frontend /app/frontend
-EXPOSE 8000 3002
+EXPOSE 8000 3002 5432
 
-# Start both services
-CMD ["sh", "-c", "cd /app/backend && uvicorn main:app --host 0.0.0.0 --port 8000 & cd /app/frontend && npm start"]
+# Start all services
+CMD ["sh", "-c", "cd /app/backend && uvicorn main:app --host 0.0.0.0 --port 8000 & cd /app/frontend && npm start & postgres -D /var/lib/postgresql/data"]
