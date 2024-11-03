@@ -292,7 +292,7 @@ def create_sim(prompt: Sim):
     
     def generate_response(config):
         for chunk in config:
-            print(f"data: {chunk.model_dump_json()}\n\n")
+            # print(f"data: {chunk.model_dump_json()}\n\n")
             yield f"data: {chunk.model_dump_json()}\n\n"
 
     return StreamingResponse(

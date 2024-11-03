@@ -60,6 +60,7 @@
 
     async function simulate(content: string) {
         console.log(JSON.stringify({ prompt: content }));
+        chatStore.isStreaming = true;
         try {
             const response = await fetch("https://simkitapi.rethoriq.com/generate-sim", {
                 method: "POST",
@@ -70,6 +71,7 @@
             });
             const reader = response.body?.getReader();
             const decoder = new TextDecoder();
+            
             while (true) {
                 const { done, value } = await reader?.read() ?? { done: true, value: undefined };
                 if (done) {
@@ -80,7 +82,6 @@
                 try {
                     const data = JSON.parse(chunk.replace(/^data: /, '').trim());
                     chatStore.simConfig = data;
-                    console.log(chatStore.simConfig);
                 } catch (error) {
                     continue;
                 }
@@ -88,6 +89,7 @@
         } catch (error) {
             // console.error("Simulation failed:", error);
         }
+        console.log(chatStore.simConfig);
     }
 </script>
 

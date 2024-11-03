@@ -1,12 +1,9 @@
 <script lang="ts">
     import { chatStore } from "./chat-store.svelte";
-    let simConfig = $state(null)
-    // @ts-ignore
-    simConfig = chatStore.simConfig;
 </script>
 
 <div class="simulation-container">
-    {#if !simConfig}
+    {#if !chatStore.simConfig}
         <div class="empty-state">
             <h2>Simulation Dashboard</h2>
             <p>Configure your simulation to get started</p>
@@ -14,18 +11,18 @@
     {:else}
         <div class="simulation-details">
             <header class="sim-header">
-                <h1>{simConfig.title}</h1>
-                <p class="description">{simConfig.description}</p>
+                <h1>{chatStore.simConfig.title}</h1>
+                <p class="description">{chatStore.simConfig.description}</p>
             </header>
 
             <div class="sim-stats">
                 <div class="stat-card">
                     <span class="stat-label">Duration</span>
-                    <span class="stat-value">{simConfig.duration} minutes</span>
+                    <span class="stat-value">{chatStore.simConfig.duration} minutes</span>
                 </div>
                 <div class="stat-card">
                     <span class="stat-label">Throughput</span>
-                    <span class="stat-value">{simConfig.entities_per_hour} per hour</span>
+                    <span class="stat-value">{chatStore.simConfig.entities_per_hour} per hour</span>
                 </div>
             </div>
 
@@ -33,7 +30,7 @@
                 <div class="grid-item">
                     <h2>Resources</h2>
                     <div class="resource-list">
-                        {#each simConfig.resources as resource}
+                        {#each chatStore.simConfig.resources as resource}
                             <div class="resource-card">
                                 <h3>{resource.name}</h3>
                                 <div class="resource-details">
@@ -48,7 +45,7 @@
                 <div class="grid-item">
                     <h2>Processes</h2>
                     <div class="process-list">
-                        {#each simConfig.processes as process}
+                        {#each chatStore.simConfig.processes as process}
                             <div class="process-card">
                                 <h3>{process.name}</h3>
                                 <span>{process.duration} minutes</span>
@@ -60,7 +57,7 @@
                 <div class="grid-item">
                     <h2>Target Metrics</h2>
                     <div class="metrics-list">
-                        {#each simConfig.target_metrics as metric}
+                        {#each chatStore.simConfig.target_metrics as metric}
                             <div class="metric-card">
                                 <h3>{metric.name}</h3>
                                 <span>{metric.target_value} {metric.unit}</span>
@@ -72,7 +69,7 @@
                 <div class="grid-item">
                     <h2>Insight Rules</h2>
                     <div class="rules-list">
-                        {#each simConfig.insight_rules as rule}
+                        {#each chatStore.simConfig.insight_rules as rule}
                             <div class="rule-card">
                                 <h3>{rule.metric}</h3>
                                 <p>{rule.condition} {rule.threshold}</p>
